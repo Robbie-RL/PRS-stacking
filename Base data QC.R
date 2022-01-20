@@ -1,6 +1,4 @@
-### Bigsnpr stacking model ###
-
-### QC of base and target files ###
+### QC of base file###
 
 
 # Base data : "Height.QC.gz"
@@ -22,12 +20,14 @@ fwrite(subset, "Height.gz", sep="\t") #tab deliminated and zipped
 
 # Use plink to remove duplicate and ambiguous SNPs
 
-# To remove duplicate SNPs:
+# Remove duplicate SNPs:
+
 #  gunzip -c Height.gz |\
 #  awk '{seen[$3]++; if(seen[$3]==1){ print}}' |\
 #  gzip - > Height.nodup.gz
 
-# To remove ambiguous SNPs
+# Remove ambiguous SNPs:
+
 #  gunzip -c Height.nodup.gz |\
 #   awk '!( ($4=="A" && $5=="T") || \
 #           ($4=="T" && $5=="A") || \
@@ -37,3 +37,12 @@ fwrite(subset, "Height.gz", sep="\t") #tab deliminated and zipped
 
 
 # Base data is now QC complete: Height.QC.gz
+
+
+
+
+
+
+
+
+
