@@ -101,6 +101,24 @@ multi_PRS
 # Stacked C+T
 # Phenotypes (response variable) is affection
 final_mod <- snp_grid_stacking(multi_PRS, y[ind.train], ncores = NCORES, K = 4)
+summary(final_mod$mod)
+str(final_mod, strict.width = "cut")
+
+
+
+
+
+# Compare summary stat BETA scores weights to SCT score weights
+new_beta <- final_mod$beta.G
+ind <- which(new_beta != 0)
+library(ggplot2)
+library(bigstatsr)
+ggplot(data.frame(y = new_beta, x = beta)[ind, ]) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  geom_abline(slope = 0, intercept = 0, color = "blue") +
+  geom_point(aes(x, y), size = 0.6) +
+  theme_bigstatsr() +
+  labs(x = "Effect sizes from GWAS", y = "Non-zero effect sizes from SCT")
 
 
 
