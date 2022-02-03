@@ -123,3 +123,116 @@ ggplot(data.frame(y = new_beta, x = beta)[ind, ]) +
 
 
 
+
+# Predict affection on testing data
+pred <- final_mod$intercept + big_prodVec(G, new_beta[ind],
+                                          ind.row=ind.test,
+                                          ind.col=ind)
+AUCBoot(pred, y[ind.test])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+stop()
+
+
+
+# Analysing multi_PRS FBM
+capture.output(attributes(multi_PRS), file = "test.txt")
+summary(attributes(multi_PRS$all_keep))
+
+capture.output(unlist(attr(multi_PRS, "all_keep"), recursive = FALSE), file = "test1.txt")
+
+
+
+
+mod <- `if`(length(unique(y[ind.train])) == 2, big_spLogReg, big_spLinReg)(multi_PRS, y[ind.train], alphas = c(1, 0.01, 0.0001), ncores = NCORES)
+
+
+best_mod <- summary(mod, best.only = TRUE) 
+# Contains best coefficients for PRS?
+beta_best_mod <- best_mod$beta[[1]]
+ind_col <- attr(mod, "ind.col")
+beta_stacking <- rep(0, ncol(multi_PRS))
+beta_stacking[ind_col] <- head(beta_best_mod, length(ind_col))
+
+for (i in 1:length(beta_stacking)){
+  if (beta_stacking[i] != beta_best_mod[i]){
+    print(beta_stacking[c(i-1, i, i+1)]) #contains zero value coffecieints
+    print(beta_best_mod[c(i-1,i,i+1)]) #does not contain zero value coeff
+    print(i)
+    break
+  }
+}
+
+lpS       <- attr(multi_PRS, "lpS") #log-p values of variants
+lpS_thr   <- attr(multi_PRS, "grid.lpS.thr") #p-value threshold ranges
+beta_gwas <- attr(multi_PRS, "betas") #beta values of variants
+
+
+#For a given log p-value of a variant
+# How many times thresholds is it larger than?
+ind_last_thr <- 1L + sapply(lpS, function(lp) sum(lp > lpS_thr))
+
+ 
+coef <- rep(0, length(beta_gwas)) #empty vector for variants
+n_thr_pval <- length(attr(multi_PRS, "grid.lpS.thr")) #number of thresholds (50)
+ind <- seq_len(n_thr_pval) #sequence of 1 to 50
+
+
+# Loop
+# Keep is the variant ID (number) of one of the 28 thresholds. In this example,
+# it is the first one which has 875 variants.
+
+# Gets first 50 PRS optimized coefficients of the same clumping 
+b <- beta_stacking[ind] 
+# Cumulative sum of the 50 p-value thresholds optimised PRS coefficients
+b2 <- c(0, cumsum(b)) 
+coef[keep] <- coef[keep] + b2[ind_last_thr[keep]]
+
+b2 <- c(0, cumsum(beta_stacking[ind])) 
+
+
+
+j <- 0
+for (ind.keep in unlist(all_keep, recursive = FALSE)){
+  while (j < 1) {
+    print(b2[ind_last_thr[ind.keep]])
+    keep <- ind.keep
+    j <- j + 1
+  }
+}
