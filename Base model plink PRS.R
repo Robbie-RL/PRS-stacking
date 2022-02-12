@@ -177,7 +177,15 @@ print(prs.result[which.max(prs.result$R2),])
 pheno.best <- merge(pheno, read.table("EUR.0.3.profile", header=T),
                     by=c("FID", "IID"))
 model.best <- lm(Height~., 
-                 data=pheno.best[, !colnames(pheno.best)%in%c("FID","IID")])
+                 data=pheno.best[, !colnames(pheno.best)%in%c("FID",
+                                                              "IID","PHENO", 
+                                                              "CNT", "CNT2")])
+
+SSR <- sum((pheno.best$Height - model.best$fitted.values)^2)
+SST <- sum((pheno.best$Height - c(rep(mean(pheno.best$Height), 472)))^2)
+R.squared <- 1 - (SSR / SST)
+summary(model.best)
+
 
 
 

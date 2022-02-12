@@ -2,6 +2,14 @@
 # Predicting heights using SCT (bigsnpr) #
 ##########################################
 
+## 4 comparisons
+# 1. Standard PRS (default clumping) optimised for best p-value threshold
+# 2. Stacked clumping and thresholding
+# 3. Best clumping and thresholding combination
+# 4. Lassosum
+
+
+
 
 dir <- "/Users/robryan/Desktop/Masters project/Height stacking model"
 setwd(dir)
@@ -37,6 +45,7 @@ base.bigSNP <- snp_attach("EUR.QC.stacking.rds")
 
 ## Create matching sample height
 pheno <- merge(base.bigSNP$fam[c(1,2)], tgt.data, by=c(1,2))
+
 
 
 
@@ -139,25 +148,28 @@ rsq <- 1 - rss/tss
 
 ## Add in population coviariate and sex:
 train.cov <- covar_from_df(pheno[ind.train, c(4:10)])
-final_mod_cov <- snp_grid_stacking(multi_PRS, 
+final_mod_cov <- snp_grid_stacking(multi_PRS,
                                y[ind.train], 
                                ncores = NCORES, 
                                K = 4,
-                               covar.train=train.cov) 
-
-#covar are not penalised pf.covar=c(rep(0, 7)
+                               covar.train=train.cov,
+                               pf.covar=c(rep(0, 7))) #covar are not penalised 
 
 summary(final_mod$mod)
 str(final_mod, strict.width = "cut")
 
+
+beta_cov <- final_mod_cov$beta.G #New beta scores
+beta.covar <- final_mod_cov$beta.covar #Covariate weightings
+ind_cov <- which(new_beta != 0) #Skip any beta scores with value of zero
+#Get covariance of testing data
+test.cov <- covar_from_df(pheno[ind.test, c(4:10)]) 
+
+
+#combine new beta scores and covariance into single matrix and convert to FBM
 x <- G[,]
 x <- cbind(x, pheno[,c(4:10)])
 x <- as_FBM(x)
-
-beta_cov <- final_mod_cov$beta.G
-beta.covar <- final_mod_cov$beta.covar
-ind_cov <- which(new_beta != 0)
-test.cov <- covar_from_df(pheno[ind.test, c(4:10)])
 
 pred.cov <- final_mod_cov$intercept + big_prodVec(x,
                                               c(beta_cov[ind], beta.covar),

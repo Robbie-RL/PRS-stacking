@@ -38,7 +38,7 @@ sumstats <- bigreadr::fread2("/Users/robryan/Desktop/Masters project/Height stac
 
 
 
-# Set up training
+# Set up training/testing split
 set.seed(1)
 # From 559 individuals, randomly choose 400 
 ind.train <- sample(nrow(G), 400)
@@ -93,7 +93,6 @@ loc <- "/Users/robryan/Desktop/Masters project/Height stacking model/tmp-data/pu
 multi_PRS <- snp_grid_PRS(G, all_keep, beta, lpval, ind.row = ind.train,
                           backingfile = loc, n_thr_lpS = 50, ncores = NCORES)
 dim(multi_PRS)
-multi_PRS
 
 
 
