@@ -205,14 +205,6 @@ train.data.0.4 <- merge(train.data,
 
 
 
-
-## Predict height on testing data
-# Create testing data frame
-test.data <- merge(covar.test, pheno, by=c("FID", "IID"))
-
-
-
-
 ## Get PRS score using optimum p-value threshold
 # Create text file of test ID
 write.table(base.bigSNP$fam[ind.test,1:2], file="test.txt", sep=" ", 
@@ -227,7 +219,7 @@ system(paste0("./plink \\",
               "--extract EUR.valid.snp \\",
               "--out EUR.test"))
 # PRS stored on EUR.test.0.4.profile
-test.data <- merge(test.data, 
+test.data.0.4 <- merge(covar.test, 
                    read.table("EUR.test.0.4.profile", header=T)[,c(1,2,6)],
                    by=c("FID", "IID"))
 
@@ -236,7 +228,7 @@ test.data <- merge(test.data,
 
 # Predict using optimum training linear model
 train.prs <- lm(Height~., data=train.data.0.4[,-c(1,2)])
-test.pred.prs <- predict(train.prs, test.data[,-c(1,2)])
+test.pred.prs <- predict(train.prs, test.data.0.4[,-c(1,2)])
 
 
 
@@ -245,6 +237,7 @@ test.pred.prs <- predict(train.prs, test.data[,-c(1,2)])
 SSR.PRS <- sum((pheno$Height[ind.test] - test.pred.prs)^2)
 SST.PRS <- sum((pheno$Height[ind.test] - mean(pheno$Height[ind.test]))^2)
 R2.PRS <- 1 - (SSR.PRS / SST.PRS)
+
 
 
 
@@ -367,11 +360,40 @@ a.combine = 'c', block.size = 1, ncores = NCORES)
 max_prs <- grid2 %>% arrange(desc(r2)) %>% slice(1:10) %>% print() %>% slice(1)
 # Using the top C+T combination, get a list of the variants in that group
 max_snp <- unlist(purrr::map(all_keep, max_prs$id))
- 
 
 
 
-# Generate PRS score using optimal C+T for test data and assess performance
+
+## Create linear regression model from training
+# Get PRS scores using optimal C+T parameters
+maxCT.prs.train <- snp_PRS(G, beta[max_snp], ind.test=ind.train, 
+                           ind.keep=max_snp,lpS.keep=lpval[max_snp], 
+                           thr.list=max_prs$thr.lp)
+# Combine with covariance data
+maxCT.train <- cbind(train.data, maxCT.prs.train)
+colnames(maxCT.train)[11] <- "PRS"
+maxCT.model <- lm(Height~., data=maxCT.train[,-c(1,2)])
+
+
+## Generate PRS score using optimal C+T 
+maxCT.prs.test <- snp_PRS(G, beta[max_snp], ind.test=ind.test, ind.keep=max_snp,
+                     lpS.keep=lpval[max_snp], thr.list=max_prs$thr.lp)
+maxCT.test <- cbind(covar.test, maxCT.prs.test)
+colnames(maxCT.test)[10] <- "PRS"
+maxCT.pred <- predict(maxCT.model, maxCT.test[, -c(1,2)])
+
+
+
+
+## Calculate coefficient of determiniation for SCT model
+SSR.SCT <- sum((pheno$Height[ind.test] - test.pred.sct)^2)
+SST.SCT <- sum((pheno$Height[ind.test] - mean(pheno$Height[ind.test]))^2)
+R2.SCT <- 1 - (SSR.SCT / SST.SCT)
+
+
+
+
+
 # Do Lassosum
 # Get final table of results
 
